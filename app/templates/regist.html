@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>regist</title>
+</head>
+<body>
+    <form method="post" action="/regist">
+        <label>username <input type="text" name="username" value=""></label><br>
+        <label>password: <input type="password" name="password1" value=""></label><br>
+        <label>repeat password: <input type="password" name="password2" value=""></label><br>
+        <label>email: <input type="email" name="email" value=""></label><br>
+        <input type="submit" value="submit">
+    </form>
+    {% if error %}
+        <p>{{ error }}</p>
+    {% endif %}
+</body>
+</html>
