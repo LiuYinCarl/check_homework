@@ -1,16 +1,25 @@
 from functools import wraps
 from flask import Flask, request, session, render_template, redirect, url_for, flash
-
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import and_, or_
+from flask_redis import FlaskRedis
+
+from app.helper import Saver, EmailSpider, to_timestamp
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:7873215@127.0.0.1:3306/check_homework'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
-app.secret_key = 'squirrel'
 
 db = SQLAlchemy(app)
+redis_store = FlaskRedis()
+redis_store.init_app(app)
 
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:7873215@127.0.0.1:3306/check_homework'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
+app.config['REDIS_URL'] = 'redis://'
+app.secret_key = 'squirrel'
+
+
+# models
+# ====================================
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -55,13 +64,20 @@ def login_required(func):
     return wrapper
 
 
-# 1.主页
+# view functions
+# ====================================
+
+@app.route('/test_redis')
+def test_redis():
+    redis_store.set('name', 'carl')
+    return redis_store.get('name')
+
+
 @app.route('/')
 def home():
     return render_template('home.html', username=session.get('username'))
 
 
-# 2.登录
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     error = None
@@ -108,6 +124,34 @@ def panel():
     username = session.get('username')
     user = User.query.filter(User.username == username).first()
     return render_template('panel.html', user=user)
+
+
+@app.route('/check_email', methods=['GET', 'POST'])
+@login_required
+def check_email():
+    username = session.get('username')
+    user = User.query.filter(User.username == username).first()
+    error = None
+    if request.method == 'POST':
+        # if valid_regist(request.form['email'], request.form['email_password']):
+        email = request.form['email']
+        email_password = request.form['email_password']
+        start_time = request.form['start_time']
+        end_time = request.form['end_time']
+        report_name = request.form['report_name']
+        send_receipt = request.form.getlist('send_receipt')
+        start_time = to_timestamp(start_time)
+        end_time = to_timestamp(end_time)
+
+        saver = Saver(email, email_password,
+                      start_time, end_time,
+                      report_name, send_receipt)
+        email_sender = EmailSpider(saver)
+        email_sender.run()
+        return render_template('check_email.html', success=True, error=error)
+    # else:
+    #     error = 'email error'
+    return render_template('check_email.html', user=user, error=error)
 
 
 if __name__ == '__main__':
