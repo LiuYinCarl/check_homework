@@ -136,6 +136,8 @@ class EmailSpider:
         self.saver = saver
         # 发送者集合
         self.sender_info = []
+        self.attachments = []
+        self.emails = []
 
     def _connect(self):
         try:
@@ -182,7 +184,7 @@ class EmailSpider:
         with open(cls.save_path + '\\' + filename, 'wb') as f:
             f.write(data)
 
-    def _download_attachment(self, message):
+    def _download_attachment(self, message, email):
         attachments = []
         for part in message.walk():
             filename = part.get_filename()
@@ -196,6 +198,8 @@ class EmailSpider:
                     print('可以下载==========')
                     self._download(part=part, filename=filename)
                     attachments.append(filename)
+                    if email not in self.emails:
+                        self.emails.append(email)
         return attachments
 
     # TODO 更改self.sender_info的数据结构使查找更快
@@ -247,13 +251,12 @@ class EmailSpider:
         tmp_sender.nickname = sender_info[0]
         tmp_sender.address = sender_info[1]
 
-        attachments = None
         if self._check_update(tmp_sender) == 'update':
-            attachments = self._download_attachment(msg)
+            attachments = self._download_attachment(msg, tmp_sender.address)
             # 存储附件名称列表
             tmp_sender.attachments = attachments
             self.sender_info.append(tmp_sender)
-        return attachments
+            self.attachments += attachments
 
     @classmethod
     def _get_from(cls, msg):
@@ -265,7 +268,6 @@ class EmailSpider:
         if value:
             name, addr = parseaddr(value)
             name = cls._decode_str(name)
-            # print(name, addr)
             from_info = (name, addr)
             return from_info
 
@@ -302,7 +304,6 @@ class EmailSpider:
         email_count = self._get_email_num()
         left = 1
         right = email_count
-        attachments = []
         left_time_stamp = self._get_time_stamp(left)
         right_time_stamp = self._get_time_stamp(right)
         print(self.saver.start_date)
@@ -315,14 +316,13 @@ class EmailSpider:
                 mid_index = (right + left) // 2
                 mid_time_stamp = self._get_time_stamp(mid_index)
                 if (self.saver.start_date <= mid_time_stamp) and (self.saver.end_date >= mid_time_stamp):
-                    attachments += self._left_traveler(left, mid_index)
-                    attachments += self._right_traveler(mid_index, right)
+                    self._left_traveler(left, mid_index)
+                    self._right_traveler(mid_index, right)
                     break
                 elif self.saver.start_date <= mid_time_stamp:
                     right = mid_index - 1
                 else:
                     left = mid_index + 1
-        return attachments
 
     def _left_traveler(self, left, right):
         """
@@ -333,16 +333,13 @@ class EmailSpider:
         """
         left = left
         right = right
-        attachments = []  # 附件列表
         for i in range(right, left - 1, -1):
             i_time_stamp = self._get_time_stamp(i)
             if (self.saver.start_date < i_time_stamp) and (self.saver.end_date > i_time_stamp):
                 # 解析邮件
-                attach = self._parse_email(i, i_time_stamp)
-                attachments.append(attach)
+                self._parse_email(i, i_time_stamp)
             else:
                 break
-        return attachments
 
     def _right_traveler(self, left, right):
         """
@@ -353,18 +350,15 @@ class EmailSpider:
         """
         left = left
         right = right
-        attachments = []
         for i in range(left, right + 1):
             i_time_stamp = self._get_time_stamp(i)
             print('start_data', self.saver.start_date)
             print('i_time', i_time_stamp)
             if (self.saver.start_date < i_time_stamp) and (self.saver.end_date > i_time_stamp):
                 # 解析邮件
-                attach = self._parse_email(i, i_time_stamp)
-                attachments.append(attach)
+                self._parse_email(i, i_time_stamp)
             else:
                 break
-        return attachments
 
     def run(self):
         """
@@ -373,9 +367,10 @@ class EmailSpider:
         """
         self._connect()
         create_dir(self.save_path)
-        attachments = self.find_emails()
+        self.find_emails()
         self._disconnect()
-        return attachments
+        print('self.attach', self.attachments)
+        return self.attachments, self.emails
 
 
 class Export2Excel(object):

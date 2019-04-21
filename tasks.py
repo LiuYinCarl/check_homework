@@ -12,15 +12,23 @@ celery = Celery('tasks', broker='redis://localhost:6379/0', backend='redis://loc
 def download_email(email, email_password, start_time, end_time, report_name):
     saver = Saver(email, email_password, start_time, end_time, report_name)
     spider = EmailSpider(saver)
-    attachments = spider.run()
-    save_attachments(attachments, email)
+    attachments, sender_emails = spider.run()
+    print('附件列表：', attachments)
+    print('emails:', sender_emails)
+    save_attachments_and_emails(attachments, sender_emails, email)
 
 
 # todo 查阅redis连接是否需要释放问题
-def save_attachments(attachments, email):
+def save_attachments_and_emails(attachments, send_emails, email):
+    print('====================================================')
     conn = Redis(host='127.0.0.1', port=6379, db=1)
     key = email + ':attachments'
+    key2 = email + ':sender_emails'
     # 先清空再添加
     conn.delete(key)
     for attach in attachments:
         conn.rpush(key, attach)
+
+    conn.delete(key2)
+    for send_email in send_emails:
+        conn.rpush(key2, send_email)
