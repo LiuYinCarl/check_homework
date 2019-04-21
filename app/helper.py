@@ -2,12 +2,21 @@ from email.parser import Parser
 from email.header import decode_header
 from email.utils import parseaddr
 import poplib
-import time
 import os
 import email
 import xlwt
 import yagmail
 from datetime import datetime
+import time
+
+
+def to_timestamp(date_time):
+    # 转换成时间数组
+    time_array = time.strptime(date_time, "%Y-%m-%d")
+    # 转换成时间戳
+    timestamp = time.mktime(time_array)
+    return timestamp
+
 
 # 可执行文件拓展名
 LEGAL_EXTENSION = ['.docx', '.doc', '.txt']
@@ -21,13 +30,6 @@ LEGAL_EXTENSION = ['.docx', '.doc', '.txt']
 
 # 细节
 # 邮箱列表中的第一个邮件的编号是1
-
-def to_timestamp(date_time):
-    # 转换成时间数组
-    time_array = time.strptime(date_time, "%Y-%m-%d")
-    # 转换成时间戳
-    timestamp = time.mktime(time_array)
-    return timestamp
 
 
 def get_now_time():
@@ -89,8 +91,7 @@ class Saver(object):
     """
 
     def __init__(self, account, password,
-                 start=None, end=None, report_name='error',
-                 send_receipt=True):
+                 start=None, end=None, report_name='error'):
         # 账号
         self.account = account
         # 密码/授权码
@@ -101,12 +102,6 @@ class Saver(object):
         self.end_date = end
         # 报告名称
         self.report_name = report_name
-        # # 下载附件
-        # self.download_attach = download_attach
-        # # 下载可执行文件
-        # self.download_exec = download_exec
-        # 发送回执
-        self.send_receipt = send_receipt
 
 
 class Sender(object):
@@ -142,7 +137,6 @@ class EmailSpider:
         # 发送者集合
         self.sender_info = []
 
-    # def __enter__(self):
     def _connect(self):
         try:
             # 调试信息
@@ -153,7 +147,6 @@ class EmailSpider:
         except Exception as e:
             print('connect error: ', e.args)
 
-    # def __exit__(self, exc_type, exc_val, exc_tb):
     @classmethod
     def _disconnect(cls):
         try:
@@ -254,11 +247,13 @@ class EmailSpider:
         tmp_sender.nickname = sender_info[0]
         tmp_sender.address = sender_info[1]
 
+        attachments = None
         if self._check_update(tmp_sender) == 'update':
             attachments = self._download_attachment(msg)
             # 存储附件名称列表
             tmp_sender.attachments = attachments
             self.sender_info.append(tmp_sender)
+        return attachments
 
     @classmethod
     def _get_from(cls, msg):
@@ -307,7 +302,7 @@ class EmailSpider:
         email_count = self._get_email_num()
         left = 1
         right = email_count
-        # mid_index = math.ceil((right + left) / 2)
+        attachments = []
         left_time_stamp = self._get_time_stamp(left)
         right_time_stamp = self._get_time_stamp(right)
         print(self.saver.start_date)
@@ -320,13 +315,14 @@ class EmailSpider:
                 mid_index = (right + left) // 2
                 mid_time_stamp = self._get_time_stamp(mid_index)
                 if (self.saver.start_date <= mid_time_stamp) and (self.saver.end_date >= mid_time_stamp):
-                    self._left_traveler(left, mid_index)
-                    self._right_traveler(mid_index, right)
+                    attachments += self._left_traveler(left, mid_index)
+                    attachments += self._right_traveler(mid_index, right)
                     break
                 elif self.saver.start_date <= mid_time_stamp:
                     right = mid_index - 1
                 else:
                     left = mid_index + 1
+        return attachments
 
     def _left_traveler(self, left, right):
         """
@@ -337,13 +333,16 @@ class EmailSpider:
         """
         left = left
         right = right
+        attachments = []  # 附件列表
         for i in range(right, left - 1, -1):
             i_time_stamp = self._get_time_stamp(i)
             if (self.saver.start_date < i_time_stamp) and (self.saver.end_date > i_time_stamp):
                 # 解析邮件
-                self._parse_email(i, i_time_stamp)
+                attach = self._parse_email(i, i_time_stamp)
+                attachments.append(attach)
             else:
                 break
+        return attachments
 
     def _right_traveler(self, left, right):
         """
@@ -354,35 +353,18 @@ class EmailSpider:
         """
         left = left
         right = right
+        attachments = []
         for i in range(left, right + 1):
             i_time_stamp = self._get_time_stamp(i)
+            print('start_data', self.saver.start_date)
+            print('i_time', i_time_stamp)
             if (self.saver.start_date < i_time_stamp) and (self.saver.end_date > i_time_stamp):
                 # 解析邮件
-                self._parse_email(i, i_time_stamp)
+                attach = self._parse_email(i, i_time_stamp)
+                attachments.append(attach)
             else:
                 break
-
-    def _send_receipt(self):
-        # 如果需要发送回执
-        if self.saver.send_receipt:
-            # 提取出所有的发件人邮箱
-            address = []
-            for sender in self.sender_info:
-                address.append(sender.address)
-
-            subject = '提交回执'
-            content = '同学你好,\n你提交的《{}》已收到，请提醒周围没有收到回执的同学及时联系老师，说明情况。'.format(self.saver.report_name)
-            # 发送回执邮件
-            send_machine = EmailSender()
-            send_machine.conn_server(account=self.saver.account, password=self.saver.password, host=self.smtp_server)
-            send_machine.send_email(receiver_list=address, subject=subject, contents=content)
-        # 不需要发送回执
-        else:
-            pass
-
-    def _export_to_excel(self, file_info):
-        export_machine = Export2Excel(self.saver.report_name)
-        export_machine.run(file_info)
+        return attachments
 
     def run(self):
         """
@@ -391,14 +373,9 @@ class EmailSpider:
         """
         self._connect()
         create_dir(self.save_path)
-        self.find_emails()
-        # 发送回执
-        self._send_receipt()
-        # 获取提交学生的学号/姓名/报告名
-        file_info = get_file_name_list(self.sender_info)
-        # 导出到EXCEL
-        self._export_to_excel(file_info)
+        attachments = self.find_emails()
         self._disconnect()
+        return attachments
 
 
 class Export2Excel(object):

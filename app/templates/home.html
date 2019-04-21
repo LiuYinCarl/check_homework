@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+
+{% block title %}主页{% endblock %}
+
+{% block content %}
+
+<div class="panel panel-success">
+    <div class="panel-heading">
+        <a href="{{ url_for('download.save_emails') }}"><h3 class="panel-title">下载邮件</h3></a>
+    </div>
+    <div class="panel-body">
+        通过该功能收集学生的作业或报告，并进行下载或者查重分析
+    </div>
+</div>
+
+<div class="panel panel-info">
+    <div class="panel-heading">
+        <h3 class="panel-title">修改回执格式</h3>
+    </div>
+    <div class="panel-body">
+        通过该功能修改发送给学生的邮件的回执格式
+    </div>
+</div>
+
+<div class="panel panel-warning">
+    <div class="panel-heading">
+        <h3 class="panel-title">历史信息</h3>
+    </div>
+    <div class="panel-body">
+        通过该功能检查之前的操作记录
+    </div>
+</div>
+{% endblock %}
+
+

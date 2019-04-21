@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    {% block head %}
+    <meta charset="utf-8">
+    <title>{% block title %}标题{% endblock %}</title>
+    {% block styles %}
+    <link rel="stylesheet" href="static/css/bootstrap.min.css">
+    <script src="https://cdn.staticfile.org/jquery/2.1.1/jquery.min.js"></script>
+    <script src="static/js/bootstrap.min.js"></script>
+    {% endblock %}
+    {% endblock %}
+
+</head>
+<body>
+<!--导航栏-->
+<div class="view">
+    <nav class="navbar navbar-default " role="navigation">
+        {% block navigation %}
+        <ul class="nav navbar-nav navbar-left">
+            <li class="active"><a href="{{ url_for('base.home') }}">主页</a></li>
+            <li><a href="#">下载</a></li>
+            <li><a href="#">帮助</a></li>
+            <li><a href="#">反馈</a></li>
+        </ul>
+
+        <ul class="nav navbar-nav navbar-right">
+            {% if email %}
+            <li><a href="{{ url_for('base.panel') }}">{{ email }}</a></li>
+            <li><a href="{{ url_for('auth.logout') }}">退出登录</a></li>
+            {% else %}
+            <li><a href="{{ url_for('auth.login') }}">登录</a></li>
+            <li><a href="{{ url_for('auth.regist') }}">注册</a></li>
+            {% endif %}
+        </ul>
+        {% endblock %}
+    </nav>
+</div>
+
+<main>
+    <!-- 页面主体信息 -->
+    {% block content %}
+    {% endblock %}
+</main>
+
+<div>
+    <footer>
+        <!--页脚信息，显示版权信息-->
+        {% block footer %}
+
+        {% endblock %}
+    </footer>
+</div>
+
+
+</body>
+</html>
