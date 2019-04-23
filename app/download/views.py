@@ -3,6 +3,7 @@ from flask import session, render_template, jsonify, request, url_for
 from app.auth.auth_func import login_required
 from app.helper import to_timestamp
 from tasks import download_email
+from redis import Redis
 
 
 @download.route('/save_emails', methods=['GET', 'POST'])
@@ -39,3 +40,18 @@ def save_emails_status(task_id):
     task = download_email.AsyncResult(task_id)
     response = {'state': task.state}
     return jsonify(response)
+
+
+@download.route('/show_attachments', methods=['GET'])
+@login_required
+def show_attachments():
+    email = session.get('email')
+
+    conn = Redis(host='127.0.0.1', port=6379, db=1)
+    key = email + ':attachments'
+    attachments = conn.lrange(key, 0, -1)
+    res = []
+    for attach in attachments:
+        print(type(attach))
+        res.append(attach.decode('utf-8'))
+    return render_template('show_attachments.html', attachments=res, email=email)

@@ -1,4 +1,4 @@
-from app.helper import EmailSpider, Saver
+from app.helper import EmailSpider, Saver, EmailSender, get_smtp_host
 from redis import Redis
 from celery import Celery
 
@@ -20,7 +20,6 @@ def download_email(email, email_password, start_time, end_time, report_name):
 
 # todo 查阅redis连接是否需要释放问题
 def save_attachments_and_emails(attachments, send_emails, email):
-    print('====================================================')
     conn = Redis(host='127.0.0.1', port=6379, db=1)
     key = email + ':attachments'
     key2 = email + ':sender_emails'
@@ -32,3 +31,11 @@ def save_attachments_and_emails(attachments, send_emails, email):
     conn.delete(key2)
     for send_email in send_emails:
         conn.rpush(key2, send_email)
+
+
+@celery.task
+def send_receipt(email, email_password, receive_list, subject, content):
+    host = get_smtp_host(email)
+    outbox = EmailSender()
+    outbox.conn_server(email, email_password, host)
+    outbox.send_email(receive_list, subject, content)

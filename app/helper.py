@@ -9,55 +9,65 @@ import yagmail
 from datetime import datetime
 import time
 
+# 可执行文件拓展名
+LEGAL_EXTENSION = ['docx', 'doc', 'txt']
+
 
 def to_timestamp(date_time):
-    # 转换成时间数组
+    """将形如2019-4-18日这种格式转换为时间戳（10位）"""
     time_array = time.strptime(date_time, "%Y-%m-%d")
-    # 转换成时间戳
     timestamp = time.mktime(time_array)
     return timestamp
 
 
-# 可执行文件拓展名
-LEGAL_EXTENSION = ['.docx', '.doc', '.txt']
+def allowed_file(filename):
+    """检查文件名是否合法"""
+    return '.' in filename and filename.split('.')[-1] in LEGAL_EXTENSION
 
 
-# 参考
-# https://blog.csdn.net/ghostresur/article/details/81875574
-# https://blog.csdn.net/tcl415829566/article/details/78481932
-# https://www.cnblogs.com/fnng/p/7967213.html
-# https://www.cnblogs.com/bendouyao/p/9077689.html
+def get_smtp_host(email):
+    """获取邮箱对应的服务商的SMTP服务器地址"""
+    maps = {
+        'qq.com': 'smtp.qq.com',
+        'gmail.com': 'smtp.gmail.com',
+        '126.com': 'smtp.126.com',
+        '163.com': 'smtp.163.com',
+        'sohu.com': 'smtp.sohu.com',
+        'sina.com': 'smtp.sina.com',
+        '139.com': 'smtp.139.com',
+    }
+    tail = email.split('@')[1]
+    if tail in maps:
+        return maps[tail]
 
-# 细节
-# 邮箱列表中的第一个邮件的编号是1
+
+def get_pop3_host(email):
+    maps = {
+        'qq.com': 'pop.qq.com'
+    }
+    tail = email.split('@')[1]
+    if tail in maps:
+        return maps[tail]
 
 
 def get_now_time():
     """获取当前时间并转换成2018_7_5_12_14这种格式
     :return: 返回特定格式的当前时间
     """
-    now_time = time.strftime('%Y_%m_%d_%H_%M_%S', time.localtime(time.time()))
-    return now_time
+    return time.strftime('%Y_%m_%d_%H_%M_%S', time.localtime(time.time()))
 
 
-def create_dir(save_path):
+def create_dir(abs_path):
     """创建附件下载文件夹
     :return: None
     """
-    path_exist = os.path.exists(save_path)
-    # 如果文件夹不存在
-    if not path_exist:
-        os.mkdir(save_path)
-    else:
-        pass
+    if not os.path.exists(abs_path):
+        os.mkdir(abs_path)
 
 
-def delete_file(file_path):
-    """删除文件
-    :param file_path: 文件路径
-    :return: None
-    """
-    os.remove(file_path)
+def delete_file(abs_path):
+    """删除文件"""
+    os.remove(abs_path)
 
 
 def split_file_name(filenames):
@@ -66,16 +76,13 @@ def split_file_name(filenames):
     :return: （学号,姓名,作业名,）元组
     """
     filename_info = []
-
     for name in filenames:
-        info = name.split('-')
-        filename_info.append(info)
+        filename_info.append(name.split('-'))
     return filename_info
 
 
 def get_file_name_list(sender_info):
-    """
-    从senfer_info中提取出所有附件名并保存为一个集合
+    """从senfer_info中提取出所有附件名并保存为一个集合
     :param sender_info: 发件人列表
     :return: （学号,姓名,作业名,）元组
     """
@@ -86,46 +93,30 @@ def get_file_name_list(sender_info):
 
 
 class Saver(object):
-    """
-    用户账户信息/下载偏好
-    """
+    """用户账户信息/下载偏好"""
 
     def __init__(self, account, password,
                  start=None, end=None, report_name='error'):
-        # 账号
-        self.account = account
-        # 密码/授权码
-        self.password = password
-        # 接受报告开始时间
-        self.start_date = start
-        # 接收报告终止时间
-        self.end_date = end
-        # 报告名称
-        self.report_name = report_name
+        self.account = account  # 账号
+        self.password = password  # 密码/授权码
+        self.start_date = start  # 接受报告开始时间
+        self.end_date = end  # 接收报告终止时间
+        self.report_name = report_name  # 报告名称
 
 
 class Sender(object):
-    """
-    发信人对象
-    """
+    """发信人对象"""
 
     def __init__(self):
-        # 昵称
-        self.nickname = None
-        # 邮箱
-        self.address = None
-        # 时间戳
-        self.timestamp = None
-        # 附件名称列表
-        self.attachments = None
-        # 附件标志
-        self.FLAG = 2
+        self.nickname = None  # 昵称
+        self.address = None  # 邮箱
+        self.timestamp = None  # 时间戳
+        self.attachments = None  # 附件名称列表
+        # self.FLAG = 2                # 附件标志
 
 
-# TODO 对附件名拆分出学号，姓名的时候写的更灵活一些 separators = ['-', '--', '_', '——', ' ']
-# TODO 对学生学号进行排序
-# TODO 未考虑附件重名的情况
-
+# TODO(bearcarl@qq.com) 对附件名拆分出学号，姓名的时候写的更灵活一些 separators = ['-', '--', '_', '——', ' ']
+# TODO(bearcarl@qq.com) 未考虑附件重名的情况
 class EmailSpider:
     pop3_server = 'pop.qq.com'
     smtp_server = 'smtp.qq.com'
@@ -134,17 +125,14 @@ class EmailSpider:
 
     def __init__(self, saver):
         self.saver = saver
-        # 发送者集合
-        self.sender_info = []
-        self.attachments = []
-        self.emails = []
+        self.sender_info = []   # 发送者集合
+        self.attachments = []   # 附件集合
+        self.emails = []        # 发件学生邮箱集合
 
     def _connect(self):
         try:
-            # 调试信息
-            EmailSpider.server.set_debuglevel(1)
-            # 身份信息
-            EmailSpider.server.user(self.saver.account)
+            EmailSpider.server.set_debuglevel(1)            # 调试信息
+            EmailSpider.server.user(self.saver.account)     # 身份信息
             EmailSpider.server.pass_(self.saver.password)
         except Exception as e:
             print('connect error: ', e.args)
@@ -178,10 +166,15 @@ class EmailSpider:
         except Exception as e:
             print('decode string error:', e.args)
 
-    @classmethod
-    def _download(cls, part, filename):
+    def _download(self, part, filename):
+        msg = '_download:{0}'.format(filename)
+        print(msg)
         data = part.get_payload(decode=True)
-        with open(cls.save_path + '\\' + filename, 'wb') as f:
+        save_dir = '{0}/{1}'.format(self.save_path, self.saver.account)
+        save_path = '{0}/{1}/{2}'.format(self.save_path, self.saver.account, filename)
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
+        with open(save_path, 'wb') as f:
             f.write(data)
 
     def _download_attachment(self, message, email):
@@ -190,12 +183,8 @@ class EmailSpider:
             filename = part.get_filename()
             if filename:
                 filename = self._decode_str(filename)
-                print('附件 ', filename)
-                extension_name = os.path.splitext(filename)[1]
-                print('拓展名 ', extension_name)
-                print(self.saver.report_name)
-                if extension_name in LEGAL_EXTENSION and self.saver.report_name in filename:
-                    print('可以下载==========')
+                print(filename)
+                if allowed_file(filename) and self.saver.report_name in filename:  # 检查文件名是否符合规则
                     self._download(part=part, filename=filename)
                     attachments.append(filename)
                     if email not in self.emails:
@@ -204,13 +193,8 @@ class EmailSpider:
 
     # TODO 更改self.sender_info的数据结构使查找更快
     def _check_update(self, tmp_sender):
-        """
-        检查发件人列表
-        返回参数：
-        1: 发件人列表中无此人或者有此人但由于时间戳比当前时间戳小，所以已删除
-        2: 发件人列表中有此人且时间戳大于当前时间戳
+        """检查发件人列表
         :param tmp_sender: 当前邮件发件人信息
-        :return: 1/2
         """
         for sender in self.sender_info:
             # 如果符合
@@ -238,9 +222,8 @@ class EmailSpider:
         tmp_sender.timestamp = time_stamp
 
         byte_lines = self.server.retr(index)[1]
-        # 转码
         str_lines = []
-        for x in byte_lines:
+        for x in byte_lines:  # 转码
             str_lines.append(x.decode())
         # 拼接邮件内容
         msg_content = '\n'.join(str_lines)
@@ -295,8 +278,7 @@ class EmailSpider:
             print('time stamp value error:', e.args)
 
     def find_emails(self):
-        """
-        二分法查找时间间隔内的邮件
+        """二分法查找时间间隔内的邮件
         开始时的左右边界分别是邮件列表中的第一封邮件和最后一封邮件
         :return: None
         """
@@ -325,8 +307,7 @@ class EmailSpider:
                     left = mid_index + 1
 
     def _left_traveler(self, left, right):
-        """
-        从right向左遍历邮件列表， 直到left
+        """从right向左遍历邮件列表， 直到left
         :param left: 遍历范围内最左侧（时间最早）的邮件编号
         :param right: 遍历范围内最右侧（时间最晚）的邮件编号
         :return: None
@@ -342,8 +323,7 @@ class EmailSpider:
                 break
 
     def _right_traveler(self, left, right):
-        """
-        从left向右遍历， 直到right
+        """从left向右遍历， 直到right
         :param left: 遍历范围内最左侧（时间最早）的邮件编号
         :param right: 遍历范围内最右侧（时间最晚）的邮件编号
         :return: None
@@ -361,8 +341,7 @@ class EmailSpider:
                 break
 
     def run(self):
-        """
-        主控方法，控制服务器的连接/断开/邮件遍历等
+        """主控方法，控制服务器的连接/断开/邮件遍历等
         :return: 发送人邮件列表/附件名列表
         """
         self._connect()
@@ -439,11 +418,3 @@ class EmailSender(object):
                              attachments=attachment_list)
         except Exception as e:
             print('EmailSender send email error:', e.args)
-
-# if __name__ == '__main__':
-#     demo = EmailSpider()
-#     demo.set_account_data(account='bearcarl@qq.com', password='ouhpsdombtrngeea')
-#     demo.set_date(1545878777, 1545965177)
-#     demo.set_download_settings(save_attachments=True, save_executable_files=True, report_name='数据库实验')
-#     demo.set_receipt(send_receipt=True)
-#     demo.run()

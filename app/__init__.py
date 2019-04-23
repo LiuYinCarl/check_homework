@@ -6,10 +6,14 @@ def register_blueprint(_app):
     from app.auth import auth
     from app.base import base
     from app.download import download
+    from app.duplicate import duplicate
+    from app.upload import upload
 
     _app.register_blueprint(auth)
     _app.register_blueprint(base)
     _app.register_blueprint(download)
+    _app.register_blueprint(duplicate)
+    _app.register_blueprint(upload)
 
 
 def create_app():

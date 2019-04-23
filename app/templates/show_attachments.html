@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% block title %}附件展示{% endblock %}
+{% block content %}
+<div>
+    <div class="panel panel-default">
+        <!--<div class="panel-heading">-->
+        <!--<h3 class="panel-title">-->
+        <!--作业收集结果-->
+        <!--</h3>-->
+        <!--</div>-->
+
+        <ul class="nav nav-tabs">
+            <li class="active"><a href="#">作业信息</a></li>
+            <li><a href="#">下载作业</a></li>
+            <li><a href="#">作业查重</a></li>
+            <li><a href="#">统计信息</a></li>
+            <li><a href="#">下载统计表</a></li>
+            <li><a href="#">在线批阅</a></li>
+        </ul>
+
+        <div class="panel-body">
+            <table class="table table-bordered table-striped">
+                <!--<caption>附件信息汇总</caption>-->
+                <thead>
+                <tr>
+                    <th>附件列表</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for attach in attachments %}
+                <tr>
+                    <td>{{ attach }}</td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
