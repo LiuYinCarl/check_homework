@@ -25,7 +25,7 @@
         var task_id = WebUploader.Base.guid(); // 产生文件唯一标识符task_id
         var uploader = WebUploader.create({
             swf: 'static/webuploader/Uploader.swf',
-            server: '{{ url_for("upload.upload_part") }}', // 上传分片地址
+            server: '{{ url_for("file.upload_part") }}', // 上传分片地址
             pick: '#picker',
             auto: true,
             chunked: true,
@@ -53,11 +53,13 @@
 
         uploader.on('uploadSuccess', function(file) { // 整个文件的所有分片都上传成功后，调用该方法
             var data = { 'task_id': task_id, 'filename': file.source['name'] };
-            $.get('{{ url_for("upload.upload_success") }}', data);
+            $.get('{{ url_for("file.upload_success") }}', data);
             $('.progress-bar').css('width', '100%');
             $('.progress-bar').text('100%');
             $('.progress-bar').addClass('progress-bar-success');
             $('.progress-bar').text('上传完成');
+            alert('上传完成');
+            window.location.href="http://127.0.0.1:5000/show_upload_attachments"; // 后期需要修改
         });
 
         uploader.on('uploadError', function(file) { // 上传过程中发生异常，调用该方法

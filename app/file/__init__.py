@@ -1,5 +1,5 @@
 from flask import Blueprint
 
-upload = Blueprint('upload', __name__)
+file = Blueprint('file', __name__)
 
 from . import views
