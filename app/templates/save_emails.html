@@ -1,0 +1,140 @@
+{% extends 'base.html' %}
+{% block title %}下载邮件{% endblock %}
+{% block content %}
+<div>
+    <!--<form class="form-horizontal" role="form" method="post" action="#">-->
+    <div id="email_form" class="form-horizontal">
+        <div class="form-group">
+            <label class="col-sm-2 control-label">邮箱 </label>
+            <div class="col-sm-10">
+                <p class="form-control-static">{{ email }}</p>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="col-sm-2 control-label">邮箱密码/授权码</label>
+            <div class="col-sm-10">
+                <input type="password" class="input-medium" name="email_password" id="email_password"
+                       value="tuvufevrdbhmbagf"
+                       placeholder="请输入邮箱密码/授权码">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="col-sm-2 control-label">报告名</label>
+            <div class="col-sm-10">
+                <input type="text" class="input-medium" name="report_name" id="report_name" value="数据库实验报告"
+                       placeholder="数据库实验报告">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="col-sm-2 control-label">下载开始时间</label>
+            <div class='input-group date'>
+                <input type='text' class="input-medium" name="start_time" id="start_time" value="2019-4-15"/>
+                <span class="input-group-addon">
+                    <span class="glyphicon glyphicon-calendar"></span>
+                </span>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="col-sm-2 control-label">下载截止时间</label>
+            <div class='input-group date'>
+                <input type='text' class="input-medium" name="end_time" id="end_time" value="2019-4-21"/>
+                <span class="input-group-addon">
+                    <span class="glyphicon glyphicon-calendar"></span>
+                </span>
+            </div>
+        </div>
+
+
+        <div class="form-group">
+            <label class="col-sm-2 control-label">回执邮件内容</label>
+            <div class="col-sm-10">
+                <textarea name="receipt_ctx" id="receipt_ctx" class="input-medium" rows="3">同学你好，你提交的《》已收到。</textarea>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="col-sm-2 control-label">发送回执邮件</label>
+            <div class="col-sm-10">
+                <input type="checkbox" class="input-medium" name="send_receipt" id="send_receipt">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <div class="col-sm-offset-2 col-sm-10">
+                <button id="start_download_emails" class="btn btn-default">提交</button>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<div>
+    <hr>
+    <h2 id="download_tag">下载中,请勿操作...</h2>
+    <hr>
+</div>
+
+<script>
+    $(document).ready(function(){
+        $("#download_tag").hide();
+    });
+    function start_download_emails(){
+        //$('#start_download_emails').remove();
+        $("#email_form").hide();  //隐藏表单
+        $("#download_tag").show(); // 显示正在下载标志
+        var email_password = $("#email_password").val();
+        var start_time = $("#start_time").val();
+        var end_time = $("#end_time").val();
+        var report_name = $("#report_name").val();
+        var formData = new FormData();
+        formData.append("email_password", email_password);
+        formData.append("start_time", start_time);
+        formData.append("end_time", end_time);
+        formData.append("report_name", report_name);
+
+        $.ajax({
+            type: 'POST',
+            data: formData,
+            url: '/email_status',
+            contentType: false,
+            processData: false,//这两个一定设置为false
+            success: function(data, status, request) {
+                status_url = request.getResponseHeader('Location');
+                <!--未写完-->
+                update_progress(status_url);
+                <!--alert('ajax success');-->
+            },
+            error: function(){
+                alert('Unexpected error');
+            }
+        });
+    }
+    function update_progress(status_url){
+        // send GET request to status URL
+        $.getJSON(status_url, function(data){
+            if (data['state'] != 'PENDING' && data['state'] != 'PROGRESS'){
+                //$("#download_tag").text('下载完成');
+                alert('邮件下载完成');
+                window.location.href="http://127.0.0.1:5000/show_attachments"; // 后期需要修改
+            }
+            else{
+                setTimeout(function(){
+                    update_progress(status_url)
+                }, 2000);
+            }
+        });
+    }
+    $(function() {
+            $('#start_download_emails').click(start_download_emails);
+        });
+
+
+
+
+
+</script>
+{% endblock %}
