@@ -1,7 +1,10 @@
+from tasks import jaccard
 from . import file
 from app.auth.auth_func import login_required
 import os
-from flask import request, session, Response, render_template as rt, send_from_directory
+from flask import request, session, jsonify, Response, render_template as rt, send_from_directory, url_for, \
+    render_template
+from redis import Redis
 
 
 @file.route('/upload_file', methods=['GET'])
@@ -61,3 +64,39 @@ def file_download(filename):
     email = session.get('email')
     UPLOAD_FOLDER = '{0}/../../Attachments/{1}'.format(base_path, email)
     return send_from_directory(UPLOAD_FOLDER, filename)
+
+
+@file.route('/duplicate', methods=['GET', 'POST'])
+def duplicate():
+    email = session.get('email')
+    if request.method == 'POST':
+        base_path = os.path.dirname(__file__)
+        file_dir = '{0}/../../Attachments/{1}'.format(base_path, email)
+        task = jaccard.apply_async((file_dir, email), serializer='json')
+        return jsonify({}), 202, {'Location': url_for('.duplicate_result', task_id=task.id)}
+    else:
+        return render_template('duplicate.html', email=email)
+
+
+@file.route('/duplicate_status/<task_id>')
+def duplicate_result(task_id):
+    result = None
+    task = jaccard.AsyncResult(task_id)
+    print(task.state)
+    if task.state == 'SUCCESS':
+        conn = Redis(host='127.0.0.1', port=6379, db=1)
+        email = session.get('email')
+        name = email + ':duplicate_result'
+        res = conn.hgetall(name)
+        result = dict()
+        for k, v in res.items():
+            new_k = k.decode('utf-8')
+            new_v = v.decode('utf-8')
+            splited_v = new_v.rsplit(',', 1)
+            tmp_v = dict()
+            tmp_v['0'] = splited_v[0]
+            tmp_v['1'] = splited_v[1]
+            print(new_v.rsplit(',', 1))
+            result[new_k] = tmp_v
+    response = {'state': task.state, 'result': result}
+    return jsonify(response)
