@@ -1,7 +1,6 @@
 from app import create_app
 
 _app = create_app()
-
 _app.secret_key = 'squirrel'
 
 

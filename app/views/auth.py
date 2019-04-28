@@ -1,7 +1,8 @@
-from . import auth
 from app.models import User, db
-from flask import request, session, redirect, render_template, url_for, flash
-from app.auth.auth_func import valid_login, valid_regist
+from flask import request, session, redirect, render_template, url_for, flash, Blueprint
+from app.utils.auth_func import valid_login, valid_regist
+
+auth = Blueprint('auth', __name__)
 
 
 @auth.route('/login', methods=['GET', 'POST'])
@@ -25,7 +26,6 @@ def logout():
 
 @auth.route('/regist', methods=['GET', 'POST'])
 def regist():
-
     error = None
     if request.method == 'POST':
         if request.form['password1'] != request.form['password2']:

@@ -14,8 +14,6 @@
         <li><a href="#">作业信息</a></li>
         <li><a href="#">下载作业</a></li>
         <li class="active"><a href="{{ url_for('file.duplicate') }}">作业查重</a></li>
-        <li><a href="#">统计信息</a></li>
-        <li><a href="#">下载统计表</a></li>
         <li><a href="#">在线批阅</a></li>
     </ul>
 
@@ -38,11 +36,18 @@
     <div class="col-sm-offset-2 col-sm-10">
         <button id="start_btn" class="btn btn-default">开始查重</button>
     </div>
+    <div class="col-sm-offset-2 col-sm-10">
+        <button id="download_report" onclick="window.open('./file/download/{{ email }}.xlsx')" class="btn btn-default">
+            下载查重报告
+        </button>
+    </div>
+
 </div>
 <div>
 </div>
 <script>
 $(document).ready(function(){
+        $("#download_report").hide()
         $("#duplicate_tag").hide();
     });
     function start_duplicate(){
@@ -73,6 +78,7 @@ $(document).ready(function(){
             if (data['state'] == 'SUCCESS'){
                 //alert('查重完成');
                 $("#duplicate_tag").hide();
+                $("#download_report").show()
                 // 显示结果
                 for(var key in data["result"]){
                     var context = "<tr><td>" + key + "</td><td>" + data['result'][key][0] + "</td><td>" + data['result'][key][1] + "</td></tr>";
@@ -89,6 +95,7 @@ $(document).ready(function(){
     $(function() {
             $('#start_btn').click(start_duplicate);
         });
+
 
 
 

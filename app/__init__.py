@@ -1,18 +1,20 @@
+import os
 from flask import Flask
 from app.models import db
+from redis import Redis
 
 
 def register_blueprint(_app):
-    from app.auth import auth
-    from app.base import base
-    from app.download import download
-    from app.duplicate import duplicate
-    from app.file import file
+    from app.views.auth import auth
+    from app.views.base import base
+    from app.views.email import email
+    # from app.views.duplicate import duplicate
+    from app.views.file import file
 
     _app.register_blueprint(auth)
     _app.register_blueprint(base)
-    _app.register_blueprint(download)
-    _app.register_blueprint(duplicate)
+    _app.register_blueprint(email)
+    # _app.register_blueprint(duplicate)
     _app.register_blueprint(file)
 
 
@@ -24,3 +26,15 @@ def create_app():
 
     register_blueprint(_app)
     return _app
+
+
+redis_conn = Redis(db=1)
+
+base_dir = os.path.dirname(__file__)
+attachment_dir = '{0}/../Attachments'.format(base_dir)
+temp_dir = '{0}/../Attachments/temp'.format(base_dir)
+
+
+
+
+

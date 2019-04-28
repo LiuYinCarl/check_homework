@@ -1,5 +1,5 @@
 import unittest
-from app.helper import allowed_file, get_smtp_host
+from app.utils.helper import allowed_file, get_smtp_host
 
 #                            _ooOoo_
 #                           o8888888o

@@ -4,7 +4,6 @@ from email.utils import parseaddr
 import poplib
 import os
 import email
-import xlwt
 import yagmail
 from datetime import datetime
 import time
@@ -125,14 +124,14 @@ class EmailSpider:
 
     def __init__(self, saver):
         self.saver = saver
-        self.sender_info = []   # 发送者集合
-        self.attachments = []   # 附件集合
-        self.emails = []        # 发件学生邮箱集合
+        self.sender_info = []  # 发送者集合
+        self.attachments = []  # 附件集合
+        self.emails = []  # 发件学生邮箱集合
 
     def _connect(self):
         try:
-            EmailSpider.server.set_debuglevel(1)            # 调试信息
-            EmailSpider.server.user(self.saver.account)     # 身份信息
+            EmailSpider.server.set_debuglevel(1)  # 调试信息
+            EmailSpider.server.user(self.saver.account)  # 身份信息
             EmailSpider.server.pass_(self.saver.password)
         except Exception as e:
             print('connect error: ', e.args)
@@ -350,48 +349,6 @@ class EmailSpider:
         self._disconnect()
         print('self.attach', self.attachments)
         return self.attachments, self.emails
-
-
-class Export2Excel(object):
-    def __init__(self, name):
-        self.excel_name = name
-        self.save_path = '..\\excel'
-        create_dir(self.save_path)
-        # 创建EXCEL表格对象
-        self.workbook = xlwt.Workbook()
-        self.sheet1 = self.workbook.add_sheet(self.excel_name, cell_overwrite_ok=True)
-
-    # 创建表头
-    def _create_sheet_head(self):
-        try:
-            self.sheet1.write(0, 0, '学号')
-            self.sheet1.write(0, 1, '姓名')
-            self.sheet1.write(0, 2, '作业名')
-        except Exception as e:
-            print('create table head error:', e.args)
-
-    # 写入信息
-    def _insert_info(self, info):
-        try:
-            for i in range(len(info)):
-                for j in range(len(info[i])):
-                    self.sheet1.write(i + 1, j, info[i][j])
-        except Exception as e:
-            print('insert info into sheet error: ', e.args)
-
-    # 保存表格
-    def _save_workbook(self):
-        try:
-            times = time.strftime('%Y_%m_%d_%H_%M', time.localtime(time.time()))
-            workbook_name = self.excel_name + times + '.xls'
-            self.workbook.save(self.save_path + '\\' + workbook_name)
-        except Exception as e:
-            print('save workbook error: ', e.args)
-
-    def run(self, info):
-        self._create_sheet_head()
-        self._insert_info(info)
-        self._save_workbook()
 
 
 class EmailSender(object):
