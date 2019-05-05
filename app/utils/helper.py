@@ -375,3 +375,6 @@ class EmailSender(object):
                              attachments=attachment_list)
         except Exception as e:
             print('EmailSender send email error:', e.args)
+
+
+
