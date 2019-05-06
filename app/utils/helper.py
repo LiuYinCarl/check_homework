@@ -119,7 +119,6 @@ class Sender(object):
 class EmailSpider:
     pop3_server = 'pop.qq.com'
     smtp_server = 'smtp.qq.com'
-    server = poplib.POP3_SSL(pop3_server)
     save_path = 'Attachments'
 
     def __init__(self, saver):
@@ -127,28 +126,27 @@ class EmailSpider:
         self.sender_info = []  # 发送者集合
         self.attachments = []  # 附件集合
         self.emails = []  # 发件学生邮箱集合
+        self.server = poplib.POP3_SSL(EmailSpider.pop3_server)
 
     def _connect(self):
         try:
-            EmailSpider.server.set_debuglevel(1)  # 调试信息
-            EmailSpider.server.user(self.saver.account)  # 身份信息
-            EmailSpider.server.pass_(self.saver.password)
+            self.server.set_debuglevel(1)  # 调试信息
+            self.server.user(self.saver.account)  # 身份信息
+            self.server.pass_(self.saver.password)
         except Exception as e:
             print('connect error: ', e.args)
 
-    @classmethod
-    def _disconnect(cls):
+    def _disconnect(self):
         try:
-            cls.server.quit()
+            self.server.quit()
         except Exception as e:
             print('disconnect error: ', e.args)
 
-    @classmethod
-    def _get_email_num(cls):
+    def _get_email_num(self):
         """获取邮件数量
         :return: 邮件列表中邮件的数量
         """
-        num, size = cls.server.stat()
+        num, size = self.server.stat()
         return num
 
     @staticmethod
