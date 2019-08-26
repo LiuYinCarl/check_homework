@@ -54,10 +54,6 @@
 [Celery的文档](http://docs.celeryproject.org/en/master/index.html)
 
 
-PyCharm常用快捷键
-
-[PyCharm常用快捷键](https://blog.csdn.net/fighter_yy/article/details/40860949)
-
 ---
 ## 注意事项
 1. 邮箱列表中的第一个邮件的编号是1
